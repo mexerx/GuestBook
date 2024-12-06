@@ -1,5 +1,5 @@
 # Info Link
-![About](About.md)
+![Link](About.md)
 -----------------
 
 # Bewertungsschema für die Programmieraufgabe
