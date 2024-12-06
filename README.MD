@@ -1,3 +1,7 @@
+# Info Link
+![About](About.md)
+-----------------
+
 # Bewertungsschema für die Programmieraufgabe
 
 **Gesamtpunktzahl: 10 Punkte**
