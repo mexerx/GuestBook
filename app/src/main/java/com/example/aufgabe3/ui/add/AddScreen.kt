@@ -1,6 +1,5 @@
 package com.example.aufgabe3.ui.add
 
-import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -10,8 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DateRangePickerState
+import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,9 +35,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.aufgabe3.model.BookingEntry
 import com.example.aufgabe3.viewmodel.SharedViewModel
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Calendar
+
 
 /**
  * Add screen
@@ -51,37 +57,12 @@ fun AddScreen(
     var name by remember { mutableStateOf("") }
     var arrivalDate by remember { mutableStateOf<LocalDate?>(null) }
     var departureDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showDateRangePicker by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
     // Function to open DatePickerDialog
-    /**
-     * Open date picker
-     *
-     * @param isArrivalDate
-     */
-    fun openDatePicker(isArrivalDate: Boolean) {
-        val calendar = Calendar.getInstance()
-
-        val datePickerDialog = DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                val selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
-                if (isArrivalDate) {
-                    arrivalDate = selectedDate
-                } else {
-                    departureDate = selectedDate
-                }
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        )
-
-        datePickerDialog.show()
-    }
-
 
 
     // Define color range
@@ -131,40 +112,20 @@ fun AddScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            /**
-             * Arrival date field
-             */
+            // Date Range Field
             OutlinedTextField(
-                value = arrivalDate?.format(dateFormatter) ?: "",
-                onValueChange = {},
-                label = { Text("Arrival Date") },
+                value = if (arrivalDate != null && departureDate != null) {
+                    "${arrivalDate?.format(dateFormatter)} - ${departureDate?.format(dateFormatter)}"
+                } else {
+                    ""
+                },
+                onValueChange = { },
+                label = { Text("Date Range") },
                 enabled = false,
                 readOnly = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { openDatePicker(true) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            /**
-             * Departure date field
-             */
-            OutlinedTextField(
-                value = departureDate?.format(dateFormatter) ?: "",
-                onValueChange = {},
-                label = { Text("Departure Date") },
-                enabled = false,
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { openDatePicker(false) },
+                    .clickable { showDateRangePicker = true },
                 colors = OutlinedTextFieldDefaults.colors(
                     disabledTextColor = MaterialTheme.colorScheme.onSurface,
                     disabledBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -179,13 +140,11 @@ fun AddScreen(
                 onClick = {
                     if (name.isEmpty() || arrivalDate == null || departureDate == null) {
                         Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
-                    }else if (arrivalDate!!.isAfter(departureDate)) {
+                    } else if (arrivalDate!!.isAfter(departureDate)) {
                         Toast.makeText(context, "Arrival date cannot be after departure date", Toast.LENGTH_SHORT).show()
-                    }
-
-                    else {
+                    } else {
                         val totalEntries = sharedViewModel.bookingsEntries.value.size
-                        val color = calculateColor(totalEntries, totalEntries +1)
+                        val color = calculateColor(totalEntries, totalEntries + 1)
                         sharedViewModel.addBookingEntry(
                             BookingEntry(id = 0, name = name, arrivalDate!!, departureDate!!, color)
                         )
@@ -198,5 +157,93 @@ fun AddScreen(
             }
         }
     }
+
+    if (showDateRangePicker) {
+        DateRangePickerDialog(
+            onDateSelected = { startDate, endDate ->
+                arrivalDate = startDate
+                departureDate = endDate
+                showDateRangePicker = false
+            },
+            onDismiss = { showDateRangePicker = false }
+        )
+    }
 }
+
+
+/**
+ * Date range picker dialog
+ *
+ * @param onDateSelected
+ * @param onDismiss
+ * @receiver
+ * @receiver
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateRangePickerDialog(
+    onDateSelected: (LocalDate, LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val dateTime = LocalDateTime.now()
+
+    val dateRangePickerState = remember {
+        DateRangePickerState(
+            initialSelectedStartDateMillis = dateTime.toMillis(),
+            initialDisplayedMonthMillis = null,
+            initialSelectedEndDateMillis = dateTime.plusDays(3).toMillis(),
+            initialDisplayMode = DisplayMode.Picker,
+            yearRange = (2023..2024)
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Date Range") },
+        confirmButton = {
+            Button(onClick = {
+                val startDateMillis = dateRangePickerState.selectedStartDateMillis
+                val endDateMillis = dateRangePickerState.selectedEndDateMillis
+
+                if (startDateMillis != null && endDateMillis != null) {
+                    val startDate = LocalDate.ofInstant(
+                        Instant.ofEpochMilli(startDateMillis),
+                        ZoneId.systemDefault()
+                    )
+                    val endDate = LocalDate.ofInstant(
+                        Instant.ofEpochMilli(endDateMillis),
+                        ZoneId.systemDefault()
+                    )
+                    onDateSelected(startDate, endDate)
+                } else {
+                    Toast.makeText(context, "Please select both start and end dates", Toast.LENGTH_SHORT).show()
+                }
+
+                onDismiss()
+            }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        text = {
+            DateRangePicker(state = dateRangePickerState)
+        },
+        modifier = Modifier.fillMaxWidth()
+        ,
+
+    )
+}
+
+/**
+ * To millis
+ *
+ */
+fun LocalDateTime.toMillis() = this.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+
 
