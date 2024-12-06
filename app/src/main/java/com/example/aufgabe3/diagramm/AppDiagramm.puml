@@ -1,0 +1,81 @@
+@startuml
+package com.example.aufgabe3 {
+    package model {
+        class BookingEntry {
+            + Int id
+            + String name
+            + LocalDate arrivalDate
+            + LocalDate departureDate
+            + Color color
+        }
+    }
+    package navigation {
+        class NavGraph
+        class AppNavHost {
+            + NavHostController navController
+            + SharedViewModel sharedViewModel
+            + composable("home")
+            + composable("add")
+        }
+    }
+    package ui {
+        package add {
+            class AddScreen {
+                + NavHostController navController
+                + SharedViewModel sharedViewModel
+                + String name
+                + LocalDate? arrivalDate
+                + LocalDate? departureDate
+                + Boolean showDateRangePicker
+                + calculateColor(Int id, Int totalEntries): Color
+                + DateRangePickerDialog(onDateSelected: (LocalDate, LocalDate) -> Unit, onDismiss: () -> Unit)
+            }
+            class DateRangePickerDialog {
+                + onDateSelected: (LocalDate, LocalDate) -> Unit
+                + onDismiss: () -> Unit
+            }
+        }
+        package home {
+            class HomeScreen {
+                + NavHostController navController
+                + SharedViewModel sharedViewModel
+                + bookingsEntries: List<BookingEntry>
+                + Scaffold()
+                + BookingEntryItem(BookingEntry booking, onDeleteClick: () -> Unit)
+            }
+            class BookingEntryItem {
+                + BookingEntry booking
+                + onDeleteClick: () -> Unit
+                + DateTimeFormatter dateFormatter
+            }
+        }
+    }
+    package viewmodel {
+        class SharedViewModel {
+            + MutableStateFlow<List<BookingEntry>> _bookingsEntries
+            + StateFlow<List<BookingEntry>> bookingsEntries
+            + AtomicInteger nextBookingId
+            + addBookingEntry(BookingEntry bookingEntry)
+            + deleteBookingEntry(BookingEntry bookingEntry)
+        }
+    }
+    class MainActivity {
+        + onCreate(Bundle?)
+        + setContent()
+    }
+}
+
+BookingEntry --> SharedViewModel
+NavGraph --> AddScreen
+NavGraph --> HomeScreen
+AddScreen --> SharedViewModel
+HomeScreen --> SharedViewModel
+MainActivity --> NavGraph
+AppNavHost --> NavHostController
+AppNavHost --> SharedViewModel
+AppNavHost --> HomeScreen
+AppNavHost --> AddScreen
+AddScreen --> DateRangePickerDialog
+HomeScreen --> BookingEntryItem
+BookingEntryItem --> BookingEntry
+@enduml
