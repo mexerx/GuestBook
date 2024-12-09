@@ -75,7 +75,7 @@ fun AddScreen(
      *
      * @param id
      * @param totalEntries
-     * @return
+     * @return Color
      */
     fun calculateColor(id: Int, totalEntries: Int): Color {
         val fraction = id.toFloat() / totalEntries.toFloat()
@@ -174,10 +174,10 @@ fun AddScreen(
 /**
  * Date range picker dialog
  *
- * @param onDateSelected
- * @param onDismiss
- * @receiver
- * @receiver
+ * @param onDateSelected (LocalDate, LocalDate) -> Unit
+ * @param onDismiss () -> Unit
+ * @receiver @return Unit
+ * @receiver @return Unit
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -191,10 +191,10 @@ fun DateRangePickerDialog(
     val dateRangePickerState = remember {
         DateRangePickerState(
             initialSelectedStartDateMillis = dateTime.toMillis(),
-            initialDisplayedMonthMillis = null,
+            initialDisplayedMonthMillis = null ,
             initialSelectedEndDateMillis = dateTime.plusDays(3).toMillis(),
             initialDisplayMode = DisplayMode.Picker,
-            yearRange = (2023..2024)
+            yearRange = (2023..2024),
         )
     }
 
@@ -235,6 +235,7 @@ fun DateRangePickerDialog(
         },
         modifier = Modifier.fillMaxWidth()
         ,
+
 
     )
 }
